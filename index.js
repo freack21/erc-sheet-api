@@ -59,16 +59,6 @@ const parseRequestSheetAsset = (res, params) => {
         });
 };
 
-app.route("/asset/:action").post(upload.any(), async (req, res) => {
-    const { action } = req.params;
-    if (action === "export") {
-        const { files } = req;
-        const { sheetName } = req.body;
-        const datas = await parseExcelAsset(files[0].path);
-        parseRequestSheetAsset(res, { sheetName, route: "addManyData", datas });
-    }
-});
-
 app.use("/asset", checkForSheetName, upload.any());
 
 app.route("/asset")
@@ -109,6 +99,23 @@ app.route("/asset")
             Kodes,
         });
     });
+app.post("/asset/:action", async (req, res) => {
+    const { action } = req.params;
+    if (action === "export") {
+        const { files } = req;
+        if (!files || (files && !files.length))
+            return res.status(400).json({
+                msg: "please include your xlsx file",
+            });
+        const { sheetName } = req.body || req;
+        const datas = await parseExcelAsset(files[0].path);
+        return parseRequestSheetAsset(res, { sheetName, route: "addManyData", datas });
+    }
+
+    res.status(404).json({
+        msg: "Handler Not Found",
+    });
+});
 /** asset management API */
 
 app.listen(PORT, () => console.log(`running at http://localhost:${PORT}`));
