@@ -1,5 +1,4 @@
 const readXlsxFile = require("read-excel-file/node");
-const fs = require("fs");
 
 exports.createData = (
     nama_barang,
@@ -21,7 +20,7 @@ exports.createData = (
     Gambar: gambar || "",
 });
 
-exports.parseExcelAsset = async (filename) => {
+exports.parseExcelAsset = async (data) => {
     const schema = {
         "Lokasi Box": {
             type: String,
@@ -58,8 +57,7 @@ exports.parseExcelAsset = async (filename) => {
         },
     };
     return new Promise((resolve) => {
-        readXlsxFile(filename, { schema, sheet: 1 }).then(({ rows }) => {
-            fs.unlinkSync(filename);
+        readXlsxFile(data, { schema, sheet: 1 }).then(({ rows }) => {
             resolve(rows);
         });
     });

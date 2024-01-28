@@ -2,9 +2,10 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const multer = require("multer");
 const axios = require("axios");
 const { parseExcelAsset } = require("./util");
+
+const { parsFormData } = require("store-file");
 
 const PORT = process.env.PORT || 4064;
 
@@ -16,10 +17,6 @@ app.use(
         extended: true,
     })
 );
-
-const upload = multer({
-    dest: "files/", // Location where files will be saved
-});
 /** middlewares */
 
 /** root */
@@ -59,10 +56,8 @@ const parseRequestSheetAsset = (res, params) => {
         });
 };
 
-app.use("/asset", checkForSheetName, upload.any());
-
 app.route("/asset")
-    .get((req, res) => {
+    .get(checkForSheetName, (req, res) => {
         const { Kode } = req.query;
         parseRequestSheetAsset(res, {
             route: "getData",
@@ -70,7 +65,7 @@ app.route("/asset")
             Kode,
         });
     })
-    .post((req, res) => {
+    .post(checkForSheetName, (req, res) => {
         const { data, datas } = req.body;
         parseRequestSheetAsset(res, {
             route: datas ? "addManyData" : "addData",
@@ -79,7 +74,7 @@ app.route("/asset")
             datas,
         });
     })
-    .put((req, res) => {
+    .put(checkForSheetName, (req, res) => {
         const { Kode, Kodes, data, datas } = req.body;
         parseRequestSheetAsset(res, {
             route: Kodes ? "updateManyData" : "updateData",
@@ -90,7 +85,7 @@ app.route("/asset")
             datas,
         });
     })
-    .delete((req, res) => {
+    .delete(checkForSheetName, (req, res) => {
         const { Kode, Kodes } = req.body;
         parseRequestSheetAsset(res, {
             route: Kodes ? "deleteManyData" : "deleteData",
@@ -99,7 +94,8 @@ app.route("/asset")
             Kodes,
         });
     });
-app.post("/asset/:action", async (req, res) => {
+
+app.post("/asset/:action", checkForSheetName, parsFormData, async (req, res) => {
     const { action } = req.params;
     if (action === "export") {
         const { files } = req;
@@ -108,7 +104,7 @@ app.post("/asset/:action", async (req, res) => {
                 msg: "please include your xlsx file",
             });
         const { sheetName } = req.body || req;
-        const datas = await parseExcelAsset(files[0].path);
+        const datas = await parseExcelAsset(files[0].buffer);
         return parseRequestSheetAsset(res, { sheetName, route: "addManyData", datas });
     }
 
