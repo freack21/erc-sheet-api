@@ -1,10 +1,15 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+const cors = require("cors");
+const multer = require("multer");
 const axios = require("axios");
+const { parseExcelAsset } = require("./util");
 
 const PORT = process.env.PORT || 4064;
 
+/** middlewares */
+app.use(cors());
 app.use(express.json());
 app.use(
     express.urlencoded({
@@ -12,13 +17,36 @@ app.use(
     })
 );
 
+const upload = multer({
+    dest: "files/", // Location where files will be saved
+});
+/** middlewares */
+
+/** root */
 app.all("/", (req, res) => {
     res.status(200).json({
         msg: "running..",
     });
 });
+/** root */
 
-const parseRequest = (res, params) => {
+/** asset management API */
+const checkForSheetName = (req, res, next) => {
+    const sheetName = req.query.sheetName || req.body.sheetName || req.header.sheetName;
+
+    if (!sheetName) {
+        res.status(400).json({
+            success: false,
+            msg: "please define 'sheetName'",
+        });
+        return;
+    }
+
+    req.sheetName = sheetName;
+    next();
+};
+
+const parseRequestSheetAsset = (res, params) => {
     axios
         .post(process.env.BASE_URL, params)
         .then((result) => {
@@ -31,29 +59,41 @@ const parseRequest = (res, params) => {
         });
 };
 
+app.route("/asset/:action").post(upload.any(), async (req, res) => {
+    const { action } = req.params;
+    if (action === "export") {
+        const { files } = req;
+        const { sheetName } = req.body;
+        const datas = await parseExcelAsset(files[0].path);
+        parseRequestSheetAsset(res, { sheetName, route: "addManyData", datas });
+    }
+});
+
+app.use("/asset", checkForSheetName, upload.any());
+
 app.route("/asset")
     .get((req, res) => {
-        const { sheetName, Kode } = req.query;
-        parseRequest(res, {
+        const { Kode } = req.query;
+        parseRequestSheetAsset(res, {
             route: "getData",
-            sheetName,
+            sheetName: req.sheetName,
             Kode,
         });
     })
     .post((req, res) => {
-        const { sheetName, data, datas } = req.body;
-        parseRequest(res, {
+        const { data, datas } = req.body;
+        parseRequestSheetAsset(res, {
             route: datas ? "addManyData" : "addData",
-            sheetName,
+            sheetName: req.sheetName,
             data,
             datas,
         });
     })
     .put((req, res) => {
-        const { sheetName, Kode, Kodes, data, datas } = req.body;
-        parseRequest(res, {
+        const { Kode, Kodes, data, datas } = req.body;
+        parseRequestSheetAsset(res, {
             route: Kodes ? "updateManyData" : "updateData",
-            sheetName,
+            sheetName: req.sheetName,
             Kode,
             data,
             Kodes,
@@ -61,13 +101,14 @@ app.route("/asset")
         });
     })
     .delete((req, res) => {
-        const { sheetName, Kode, Kodes } = req.body;
-        parseRequest(res, {
+        const { Kode, Kodes } = req.body;
+        parseRequestSheetAsset(res, {
             route: Kodes ? "deleteManyData" : "deleteData",
-            sheetName,
+            sheetName: req.sheetName,
             Kode,
             Kodes,
         });
     });
+/** asset management API */
 
 app.listen(PORT, () => console.log(`running at http://localhost:${PORT}`));
