@@ -112,6 +112,10 @@ app.post("/asset/:action", checkForSheetName, parsFormData, async (req, res) => 
         msg: "Handler Not Found",
     });
 });
+
+app.get("/asset-names", async (req, res) => {
+    return parseRequestSheetAsset(res, { route: "getSheetNames"});
+});
 /** asset management API */
 
 app.listen(PORT, () => console.log(`running at http://localhost:${PORT}`));
