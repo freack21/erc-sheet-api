@@ -3,7 +3,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const axios = require("axios");
-const { parseExcelAsset } = require("./util");
+const { parseExcelAsset, parseRequest } = require("./util");
 
 const { parsFormData } = require("store-file");
 
@@ -44,16 +44,7 @@ const checkForSheetName = (req, res, next) => {
 };
 
 const parseRequestSheetAsset = (res, params) => {
-    axios
-        .post(process.env.BASE_URL, params)
-        .then((result) => {
-            res.status(200).json(result.data);
-        })
-        .catch((error) => {
-            res.status(500).json({
-                error,
-            });
-        });
+    parseRequest(process.env.BASE_URL, res, params);
 };
 
 app.route("/asset")
@@ -114,8 +105,55 @@ app.post("/asset/:action", checkForSheetName, parsFormData, async (req, res) => 
 });
 
 app.get("/asset-names", async (req, res) => {
-    return parseRequestSheetAsset(res, { route: "getSheetNames"});
+    return parseRequestSheetAsset(res, { route: "getSheetNames" });
 });
 /** asset management API */
+
+/** UltraElevation Sonic API */
+const parseRequestUES = (res, params) => {
+    parseRequest(process.env.UES_URL, res, params);
+};
+
+app.route("/ues")
+    .get((req, res) => {
+        const { id } = req.query;
+        parseRequestUES(res, {
+            route: "read",
+            id,
+        });
+    })
+    .post((req, res) => {
+        const { id } = req.body;
+        parseRequestUES(res, {
+            route: "init",
+            id,
+        });
+    })
+    .put((req, res) => {
+        const { id, type, newValue } = req.body;
+        parseRequestUES(res, {
+            route: "crange",
+            id,
+            type,
+            newValue,
+        });
+    })
+    .patch((req, res) => {
+        const { id, oldValue, newValue } = req.body;
+        parseRequestUES(res, {
+            route: "ckey",
+            id,
+            oldValue,
+            newValue,
+        });
+    })
+    .delete((req, res) => {
+        const { id } = req.body;
+        parseRequestUES(res, {
+            route: "delete",
+            id,
+        });
+    });
+/** UltraElevation Sonic API */
 
 app.listen(PORT, () => console.log(`running at http://localhost:${PORT}`));

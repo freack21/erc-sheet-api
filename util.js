@@ -1,3 +1,4 @@
+const { default: axios } = require("axios");
 const readXlsxFile = require("read-excel-file/node");
 
 exports.createData = (
@@ -61,4 +62,17 @@ exports.parseExcelAsset = async (data) => {
             resolve(rows);
         });
     });
+};
+
+exports.parseRequest = (url, res, params) => {
+    axios
+        .post(url, params)
+        .then((result) => {
+            res.status(200).json(result.data);
+        })
+        .catch((error) => {
+            res.status(500).json({
+                error,
+            });
+        });
 };
