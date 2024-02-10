@@ -64,15 +64,15 @@ exports.parseExcelAsset = async (data) => {
     });
 };
 
-exports.parseRequest = (url, res, params) => {
-    axios
-        .post(url, params)
-        .then((result) => {
-            res.status(200).json(result.data);
-        })
-        .catch((error) => {
-            res.status(500).json({
+exports.parseRequest = async (url, res, params) => {
+    try {
+        const result = await axios.post(url, params);
+        res.status(200).json(result.data).end();
+    } catch (error) {
+        res.status(500)
+            .json({
                 error,
-            });
-        });
+            })
+            .end();
+    }
 };

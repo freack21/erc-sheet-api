@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const axios = require("axios");
 const { parseExcelAsset, parseRequest } = require("./util");
 
 const { parsFormData } = require("store-file");
@@ -43,31 +42,31 @@ const checkForSheetName = (req, res, next) => {
     next();
 };
 
-const parseRequestSheetAsset = (res, params) => {
-    parseRequest(process.env.BASE_URL, res, params);
+const parseRequestSheetAsset = async (res, params) => {
+    await parseRequest(process.env.BASE_URL, res, params);
 };
 
 app.route("/asset")
-    .get(checkForSheetName, (req, res) => {
+    .get(checkForSheetName, async (req, res) => {
         const { Kode } = req.query;
-        parseRequestSheetAsset(res, {
+        return await parseRequestSheetAsset(res, {
             route: "getData",
             sheetName: req.sheetName,
             Kode,
         });
     })
-    .post(checkForSheetName, (req, res) => {
+    .post(checkForSheetName, async (req, res) => {
         const { data, datas } = req.body;
-        parseRequestSheetAsset(res, {
+        return await parseRequestSheetAsset(res, {
             route: datas ? "addManyData" : "addData",
             sheetName: req.sheetName,
             data,
             datas,
         });
     })
-    .put(checkForSheetName, (req, res) => {
+    .put(checkForSheetName, async (req, res) => {
         const { Kode, Kodes, data, datas } = req.body;
-        parseRequestSheetAsset(res, {
+        return await parseRequestSheetAsset(res, {
             route: Kodes ? "updateManyData" : "updateData",
             sheetName: req.sheetName,
             Kode,
@@ -76,9 +75,9 @@ app.route("/asset")
             datas,
         });
     })
-    .delete(checkForSheetName, (req, res) => {
+    .delete(checkForSheetName, async (req, res) => {
         const { Kode, Kodes } = req.body;
-        parseRequestSheetAsset(res, {
+        return await parseRequestSheetAsset(res, {
             route: Kodes ? "deleteManyData" : "deleteData",
             sheetName: req.sheetName,
             Kode,
@@ -96,7 +95,7 @@ app.post("/asset/:action", checkForSheetName, parsFormData, async (req, res) => 
             });
         const { sheetName } = req.body || req;
         const datas = await parseExcelAsset(files[0].buffer);
-        return parseRequestSheetAsset(res, { sheetName, route: "addManyData", datas });
+        return await parseRequestSheetAsset(res, { sheetName, route: "addManyData", datas });
     }
 
     res.status(404).json({
@@ -105,51 +104,51 @@ app.post("/asset/:action", checkForSheetName, parsFormData, async (req, res) => 
 });
 
 app.get("/asset-names", async (req, res) => {
-    return parseRequestSheetAsset(res, { route: "getSheetNames" });
+    await parseRequestSheetAsset(res, { route: "getSheetNames" });
 });
 /** asset management API */
 
 /** UltraElevation Sonic API */
-const parseRequestUES = (res, params) => {
-    parseRequest(process.env.UES_URL, res, params);
+const parseRequestUES = async (res, params) => {
+    return await parseRequest(process.env.UES_URL, res, params);
 };
 
 app.route("/ues")
-    .get((req, res) => {
+    .get(async (req, res) => {
         const { id } = req.query;
-        parseRequestUES(res, {
+        return await parseRequestUES(res, {
             route: "read",
             id,
         });
     })
-    .post((req, res) => {
+    .post(async (req, res) => {
         const { id } = req.body;
-        parseRequestUES(res, {
+        return await parseRequestUES(res, {
             route: "init",
             id,
         });
     })
-    .put((req, res) => {
+    .put(async (req, res) => {
         const { id, type, newValue } = req.body;
-        parseRequestUES(res, {
+        return await parseRequestUES(res, {
             route: "crange",
             id,
             type,
             newValue,
         });
     })
-    .patch((req, res) => {
+    .patch(async (req, res) => {
         const { id, oldValue, newValue } = req.body;
-        parseRequestUES(res, {
+        return await parseRequestUES(res, {
             route: "ckey",
             id,
             oldValue,
             newValue,
         });
     })
-    .delete((req, res) => {
+    .delete(async (req, res) => {
         const { id } = req.body;
-        parseRequestUES(res, {
+        return await parseRequestUES(res, {
             route: "delete",
             id,
         });
